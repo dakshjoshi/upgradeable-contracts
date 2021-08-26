@@ -1,4 +1,4 @@
-pragma solidity 0.8.7;
+pragma solidity 0.6.12;
 
 import "./Storage.sol";
 
@@ -12,33 +12,41 @@ import "./Storage.sol";
 contract Proxy is Storage{
 
 address public updContract;
-string public functionToCall;
-/* constructor(address functionContract) {
-*     updContract = functionContract;
-}*/
+
+// constructor(address functionContract) {
+//      updContract = functionContract;
+// }
 
 function updateContract(address newAddress) public {
     updContract = newAddress;
 }
 
-
-
-function getTheNumber() public  returns(bytes memory){
-   (bool success, bytes memory data) = updContract.delegatecall(
-        abi.encodeWithSignature("getNumber()")
-    );
-    return (data);
+function read() public view returns (uint256) {
+return uintStorage["number"];
 }
 
-function setFunction(string memory _newFunction) public {
-functionToCall  = _newFunction;
-}
+ fallback() external payable {
+     //Setting the proxy contract address
+     address implementaton = updContract;
 
-function setTheNumber(uint256 toSet) public returns (bool){
-    (bool success, bytes memory data) = updContract.delegatecall(
-        abi.encodeWithSignature("setTheNumber(uint256)", toSet)
-    );
-    return success;
-}
+     //For security setting the condition that address !=0
+     //Because that will lead us no where
+     require(updContract != address(0));
 
+     //Setting variable for the data of the function 
+     //This is all the input values of the function
+     bytes memory data = msg.data;
+
+//The fun begins
+assembly {
+let result := delegatecall(gas(), implementaton, add(data, 0x20), mload(data), 0, 0)
+let size := returndatasize()
+let ptr := mload(0x40)
+returndatacopy(ptr, 0, size)
+
+switch result
+case 0 {revert(ptr, size)}
+default {return (ptr, size)}
+}
+}
 }

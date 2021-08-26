@@ -1,4 +1,4 @@
-pragma solidity 0.8.7;
+pragma solidity 0.6.12;
 
 import "./Storage.sol";
 
@@ -10,12 +10,12 @@ import "./Storage.sol";
 
 contract Function is Storage{
 
-function getTheNumber() public view returns(uint256){
-    return getNumber();
+function getTheNumber(string memory _variable) public view returns(uint256){
+return getNumber(_variable);
 }
 
-function setTheNumber(uint256 toSet) public {
-    setNumber(toSet);
+function setTheNumber(string memory _variable, uint256 toSet) public {
+ setNumber(_variable, toSet);
 }
 
 }
