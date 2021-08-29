@@ -36,7 +36,7 @@ fallback() external payable {
 
 //Setting the proxy contract address
 //My addition : 
-    bytes20 _address;
+bytes20 _address;
 
 assembly {
         calldatacopy(0x0, 16, 36)
