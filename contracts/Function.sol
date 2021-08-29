@@ -10,11 +10,26 @@ import "./Storage.sol";
 
 contract Function is Storage{
 
-function getTheNumber(string memory _variable) public view returns(uint256){
+modifier onlyOwner () {
+    require(msg.sender == owner, 'You are not the owner');
+    _;
+}
+
+constructor () public {
+    require(!_initialized);
+    _initialized = true;
+    initialize(msg.sender);
+}
+
+function initialize(address _owner) public {
+owner = _owner;
+}
+
+function getTheNumber(address proxyAddress, string memory _variable) public view returns(uint256){
 return getNumber(_variable);
 }
 
-function setTheNumber(string memory _variable, uint256 toSet) public {
+function setTheNumber(address proxyAddress, string memory _variable, uint256 toSet) public onlyOwner{
  setNumber(_variable, toSet);
 }
 

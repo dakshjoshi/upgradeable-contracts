@@ -11,35 +11,46 @@ import "./Storage.sol";
 
 contract Proxy is Storage{
 
-address public updContract;
+constructor() public {
+    owner = msg.sender;
+    //updContract = functionContract;
+}
 
-// constructor(address functionContract) {
-//      updContract = functionContract;
-// }
+function addProxy(address newAddress) public {
+    functionalAddress[newAddress] = true;
+}
 
-function updateContract(address newAddress) public {
-    updContract = newAddress;
+function removeProxy(address oldAddress) public {
+    functionalAddress[oldAddress] = false;
 }
 
 function read() public view returns (uint256) {
 return uintStorage["number"];
 }
 
- fallback() external payable {
-     //Setting the proxy contract address
-     address implementaton = updContract;
+fallback() external payable {
 
-     //For security setting the condition that address !=0
-     //Because that will lead us no where
-     require(updContract != address(0));
-
-     //Setting variable for the data of the function 
-     //This is all the input values of the function
+//Setting variable for the data of the function 
+//This is all the input values of the function
      bytes memory data = msg.data;
+
+//Setting the proxy contract address
+//My addition : 
+    bytes20 _address;
+
+assembly {
+        calldatacopy(0x0, 16, 36)
+        _address := mload(0x0)
+}
+
+address proxy = address(_address);
+
+//For security setting the condition that address is a one which we recognize
+require(functionalAddress[proxy], "This is not an active proxy contract");
 
 //The fun begins
 assembly {
-let result := delegatecall(gas(), implementaton, add(data, 0x20), mload(data), 0, 0)
+let result := delegatecall(gas(), proxy, add(data, 0x20), mload(data), 0, 0)
 let size := returndatasize()
 let ptr := mload(0x40)
 returndatacopy(ptr, 0, size)
@@ -49,4 +60,5 @@ case 0 {revert(ptr, size)}
 default {return (ptr, size)}
 }
 }
+
 }

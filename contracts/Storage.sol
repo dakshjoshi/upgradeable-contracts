@@ -27,6 +27,8 @@ mapping (string => bool) public boolStorage;
 mapping (string => string) public stringStorage;
 mapping (string => bytes4) public bytesStorage;
 
+mapping (address => bool) public functionalAddress;
+
 
 address public owner;
 bool public _initialized;
