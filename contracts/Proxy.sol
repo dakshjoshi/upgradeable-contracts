@@ -1,6 +1,8 @@
 pragma solidity 0.8.7;
 
 import "./Storage.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /*
 * @dev this contract is the main contract 
@@ -9,7 +11,7 @@ import "./Storage.sol";
 * by simply updating the new function contract address 
 */
 
-contract Proxy is Storage{
+contract Proxy is Storage, Pausable{
 
 modifier onlyOwner()  {
 require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "You are not the owner");
