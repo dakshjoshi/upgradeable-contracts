@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.8.7;
 
 /*
 * @dev this contract is to set common 

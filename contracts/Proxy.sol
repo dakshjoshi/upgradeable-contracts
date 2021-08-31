@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.8.7;
 
 import "./Storage.sol";
 
@@ -11,28 +11,64 @@ import "./Storage.sol";
 
 contract Proxy is Storage{
 
+modifier onlyOwner()  {
+require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "You are not the owner");
+_;
+}
+
+modifier ifAdmin() {
+   if(hasRole(DEFAULT_ADMIN_ROLE, _msgSender())){
+       _;
+   }else {
+       _fallback();
+   }
+}
+
+modifier ifUserOrUpgradeOfficer () {
+    if(!hasRole(DEFAULT_ADMIN_ROLE, _msgSender())) {
+        _;
+    } else if(hasRole(UPGRADE_OFFICER, _msgSender())) {
+        _;
+    }
+    else {
+        revert();
+    }
+}
+
 constructor() public {
     owner = msg.sender;
     //updContract = functionContract;
+    
+    //When role variables are decided we will remove the above 
+    //owner = msg.sender update the code accordingly
+    _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    _setupRole(MANAGER_ROLE, _msgSender());
+    _setupRole(UPGRADE_OFFICER, _msgSender());
+    _setupRole(EMERGENCY_OFFICERS, _msgSender());
+    _setupRole(PARTNERS, _msgSender());
+
 }
 
-function addProxy(address newAddress) public {
+function addProxy(address newAddress) public ifAdmin{
     functionalAddress[newAddress] = true;
 }
 
-function removeProxy(address oldAddress) public {
+function removeProxy(address oldAddress) public ifAdmin{
     functionalAddress[oldAddress] = false;
 }
 
-function read() public view returns (uint256) {
-return uintStorage["number"];
-}
+/** 
+* @dev User calls a function --> is directly directed to fallback
+* Admin calls a function --> is directed to the function
+* If upgrade officer calls a function --> is directly directed to fallback
+* rest of the admins are prohibited from using the fallback
+*/
 
-fallback() external payable {
+function _fallback() internal ifUserOrUpgradeOfficer {
 
 //Setting variable for the data of the function 
 //This is all the input values of the function
-     bytes memory data = msg.data;
+bytes memory data = msg.data;
 
 //Setting the proxy contract address
 //My addition : 
@@ -46,7 +82,7 @@ assembly {
 address proxy = address(_address);
 
 //For security setting the condition that address is a one which we recognize
-require(functionalAddress[proxy], "This is not an active proxy contract");
+require(functionalAddress[proxy] || proxy == updateStrage && hasRole(UPGRADE_OFFICER, _msgSender()));
 
 //The fun begins
 assembly {
@@ -59,6 +95,11 @@ switch result
 case 0 {revert(ptr, size)}
 default {return (ptr, size)}
 }
+}
+
+
+fallback() external payable {
+    _fallback();
 }
 
 }

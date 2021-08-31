@@ -1,4 +1,4 @@
-pragma solidity 0.6.12;
+pragma solidity 0.8.7;
 
 import "./Storage.sol";
 
@@ -26,11 +26,11 @@ owner = _owner;
 }
 
 function getTheNumber(address proxyAddress, string memory _variable) public view returns(uint256){
-return getNumber(_variable);
+return uintStorage[_variable];
 }
 
-function setTheNumber(address proxyAddress, string memory _variable, uint256 toSet) public onlyOwner{
- setNumber(_variable, toSet);
+function setTheNumber(address proxyAddress, string memory _variable, uint256 toSet) public {
+    uintStorage[_variable] = toSet;
 }
 
 }
