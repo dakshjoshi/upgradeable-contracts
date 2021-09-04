@@ -69,8 +69,14 @@ constructor(address _manager, address _emergencyOfficer, address upgradeOfficer)
 
 }
 
-function _pause() internal override ifEmergencyOfficer {
+function _pause() internal override whenNotPaused ifEmergencyOfficer {
+    _paused = true;
+    emit Paused(_msgSender());
+}
 
+function _unpause() internal override whenPaused ifEmergencyOfficer{
+    _paused = false;
+    emit Unpaused(_msgSender());
 }
 
 function addProxy(address newAddress, string memory _name) public ifManager{
