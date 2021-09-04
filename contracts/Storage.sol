@@ -93,14 +93,19 @@ mapping (string => mapping (string => string)) Units;
 /* This mapping is to map all the active 
 * proxy addresses to true it's bool value  
 */
-mapping (address => bool) public functionalAddress;
+mapping (address => addressStatus) proxyAddresses;
+
+struct addressStatus {
+    mapping(string => string) details;
+    mapping(string => bool) boolValues;
+}
 
 /* @dev This address is a special address
 * In case of chaning data in this storage contract
 * There is a provision to set a pointer to an contract 
 * Where we can define the functions we want to edit
 * the data according to our needs */
-address public updateStrage;
+address public updateStorage;
 
 address public owner;
 bool public _initialized;
@@ -110,7 +115,7 @@ bool public _initialized;
 * cover, they all have different rights of functions
 * Above them all sits the "DEFAULT_ADMIN_ROLE"
 */
-bytes32 public constant MANAGER_ROLE = keccak256("MANAGERS");
+bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 bytes32 public constant UPGRADE_OFFICER = keccak256("UPGRADE_OFFICERS");
 bytes32 public constant EMERGENCY_OFFICERS = keccak256("EMERGENCY_OFFICERS");
 bytes32 public constant PARTNERS = keccak256("PARTNERS");

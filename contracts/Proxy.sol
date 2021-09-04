@@ -1,8 +1,8 @@
 pragma solidity 0.8.7;
 
 import "./Storage.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 /*
 * @dev this contract is the main contract 
@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 * by simply updating the new function contract address 
 */
 
-contract Proxy is Storage, Pausable{
+contract Proxy is Storage, ReentrancyGuard, Pausable{
 
 modifier onlyOwner()  {
 require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "You are not the owner");
@@ -26,37 +26,83 @@ modifier ifAdmin() {
    }
 }
 
+modifier ifManager() {
+   if(hasRole(DEFAULT_ADMIN_ROLE, _msgSender())){
+       _;
+   }else if (hasRole(MANAGER_ROLE, _msgSender())){
+       _;
+   } else {
+       _fallback();
+   }
+}
+
 modifier ifUserOrUpgradeOfficer () {
-    if(!hasRole(DEFAULT_ADMIN_ROLE, _msgSender())) {
-        _;
+    if(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()) || hasRole(EMERGENCY_OFFICERS, _msgSender()) || hasRole(MANAGER_ROLE, _msgSender())) {
+        revert();
     } else if(hasRole(UPGRADE_OFFICER, _msgSender())) {
         _;
     }
     else {
-        revert();
+       _;
     }
 }
 
-constructor() public {
-    owner = msg.sender;
-    //updContract = functionContract;
+modifier ifEmergencyOfficer () {
+    if(hasRole(DEFAULT_ADMIN_ROLE, _msgSender())) {
+        _;
+    } else if(hasRole(EMERGENCY_OFFICERS, _msgSender())) {
+        _;
+    }
+    else {
+       _fallback();
+    }
+}
+
+constructor(address _manager, address _emergencyOfficer, address upgradeOfficer) {
     
     //When role variables are decided we will remove the above 
     //owner = msg.sender update the code accordingly
     _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-    _setupRole(MANAGER_ROLE, _msgSender());
-    _setupRole(UPGRADE_OFFICER, _msgSender());
-    _setupRole(EMERGENCY_OFFICERS, _msgSender());
-    _setupRole(PARTNERS, _msgSender());
+    _setupRole(MANAGER_ROLE, _manager);
+    _setupRole(UPGRADE_OFFICER, upgradeOfficer);
+    _setupRole(EMERGENCY_OFFICERS, _emergencyOfficer);
 
 }
 
-function addProxy(address newAddress) public ifAdmin{
-    functionalAddress[newAddress] = true;
+function _pause() internal override ifEmergencyOfficer {
+
 }
 
-function removeProxy(address oldAddress) public ifAdmin{
-    functionalAddress[oldAddress] = false;
+function addProxy(address newAddress, string memory _name) public ifManager{
+    proxyAddresses[newAddress].details['name'] = _name;
+    proxyAddresses[newAddress].boolValues['exists']= true;
+}
+
+function removeProxy(address oldAddress) public ifManager{
+    require(proxyAddresses[oldAddress].boolValues['exists']== true, 'Is not a proxy');
+    require(proxyAddresses[oldAddress].boolValues['active']!= false, 'Is already unactive');
+
+    proxyAddresses[oldAddress].boolValues['active']= false;
+}
+
+function activateProxy(address proxyAddress) public ifManager {
+    proxyAddresses[proxyAddress].boolValues['active'] = true;
+}
+
+function updateProxyInfo(string[] memory _keyValues, string[] memory info, address proxyAddress) public ifManager {
+    require(proxyAddresses[proxyAddress].boolValues['exists']== true, 'Is not a proxy');
+
+     for(uint i=0; i<_keyValues.length; i++) {
+    proxyAddresses[proxyAddress].details[_keyValues[i]] = info[i];
+}
+}
+
+function updateBoolInfo(string[] memory _keyValues, bool[] memory info, address proxyAddress) public ifManager {
+    require(proxyAddresses[proxyAddress].boolValues['exists']== true, 'Is not a proxy');
+
+     for(uint i=0; i<_keyValues.length; i++) {
+    proxyAddresses[proxyAddress].boolValues[_keyValues[i]] = info[i];
+}
 }
 
 /** 
@@ -66,7 +112,7 @@ function removeProxy(address oldAddress) public ifAdmin{
 * rest of the admins are prohibited from using the fallback
 */
 
-function _fallback() internal ifUserOrUpgradeOfficer {
+function _fallback() internal ifUserOrUpgradeOfficer whenNotPaused nonReentrant{
 
 //Setting variable for the data of the function 
 //This is all the input values of the function
@@ -84,7 +130,8 @@ assembly {
 address proxy = address(_address);
 
 //For security setting the condition that address is a one which we recognize
-require(functionalAddress[proxy] || proxy == updateStrage && hasRole(UPGRADE_OFFICER, _msgSender()));
+require(proxy != address(0));
+require(proxyAddresses[proxy].boolValues['active'] || proxy == updateStorage);
 
 //The fun begins
 assembly {
