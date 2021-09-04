@@ -61,13 +61,16 @@ modifier ifEmergencyOfficer () {
 constructor(address _manager, address _emergencyOfficer, address upgradeOfficer) {
     
     //When role variables are decided we will remove the above 
-    //owner = msg.sender update the code accordingly
     _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     _setupRole(MANAGER_ROLE, _manager);
     _setupRole(UPGRADE_OFFICER, upgradeOfficer);
     _setupRole(EMERGENCY_OFFICERS, _emergencyOfficer);
 
 }
+
+event newPartnerAdded(address _proxyAddress, address _partnerAddress);
+
+event partnerMadeActive(address _proxyAddress, address _partnerAddress);
 
 function _pause() internal override whenNotPaused ifEmergencyOfficer {
     _paused = true;
@@ -82,6 +85,8 @@ function _unpause() internal override whenPaused ifEmergencyOfficer{
 function addProxy(address newAddress, string memory _name) public ifManager{
     proxyAddresses[newAddress].details['name'] = _name;
     proxyAddresses[newAddress].boolValues['exists']= true;
+
+    emit newPartnerAdded(newAddress, _msgSender());
 }
 
 function removeProxy(address oldAddress) public ifManager{
@@ -93,12 +98,14 @@ function removeProxy(address oldAddress) public ifManager{
 
 function activateProxy(address proxyAddress) public ifManager {
     proxyAddresses[proxyAddress].boolValues['active'] = true;
+
+    emit partnerMadeActive(proxyAddress, _msgSender());
 }
 
 function updateProxyInfo(string[] memory _keyValues, string[] memory info, address proxyAddress) public ifManager {
     require(proxyAddresses[proxyAddress].boolValues['exists']== true, 'Is not a proxy');
 
-     for(uint i=0; i<_keyValues.length; i++) {
+    for(uint i=0; i<_keyValues.length; i++) {
     proxyAddresses[proxyAddress].details[_keyValues[i]] = info[i];
 }
 }

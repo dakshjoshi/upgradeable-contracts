@@ -48,7 +48,7 @@ uint _totalBought = totalBought[_buyer];
     pd.Product['company'] = _company;
     pd.Product['currency'] = _currency;
 
-pd.amount = _amountPaid;
+pd.details['amount'] = _amountPaid;
 pd.timeStamp = block.timestamp;
 pd.exists = true;
 
