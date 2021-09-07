@@ -72,14 +72,29 @@ event newPartnerAdded(address _proxyAddress, address _partnerAddress);
 
 event partnerMadeActive(address _proxyAddress, address _partnerAddress);
 
-function _pause() internal override whenNotPaused ifEmergencyOfficer {
+event contractPaused(address _pauser, string _message);
+
+event contractResumed(address _resumer, string _message);
+
+function _pause() internal override whenNotPaused {
     _paused = true;
     emit Paused(_msgSender());
 }
 
-function _unpause() internal override whenPaused ifEmergencyOfficer{
+function _unpause() internal override whenPaused{
     _paused = false;
     emit Unpaused(_msgSender());
+}
+
+function stop(string memory _message) public ifEmergencyOfficer {
+    _pause();
+
+    emit contractPaused(_msgSender(),_message );
+}
+
+function resume(string memory _message) public ifEmergencyOfficer {
+    _unpause();
+    emit contractResumed(_msgSender(),_message );
 }
 
 function addProxy(address newAddress, string memory _name) public ifManager{
